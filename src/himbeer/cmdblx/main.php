@@ -11,10 +11,10 @@ class Main extends PluginBase implements Listener{
      
      public function onEnable(){
           $this->getServer()->getPluginManager()->registerEvents($this,$this);
-          $this->getLogger()->info("VIPcmds enabled!");
+          $this->getLogger()->info("cmdblx enabled!");
           @mkdir($this->getDataFolder());
           $this->config = new Config ($this->getDataFolder() . "config.yml" , Config::YAML, array(
-               #cinfig file for cmdblx
+               #config file for cmdblx
           ));
           $this->saveResource("config.yml");
      }
@@ -22,7 +22,7 @@ class Main extends PluginBase implements Listener{
      public function onCommand(CommandSender $sender, Command $command, $label, array $args){
           switch($command->getName()){
                case "cmdblx":
-                   if
+                   #do stuff
           }
           return true;
      }
