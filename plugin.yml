@@ -7,6 +7,9 @@ commands:
     cmdblock:
         description: Change the command of a commandblock.
         usage: /cmdblock
+        permission: cmdblock.cmd
 permissions:
+    cmdblock.create:
+        default: op
     cmdblock.cmd:
-        default: false
+        default: op
