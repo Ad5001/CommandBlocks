@@ -1,11 +1,11 @@
 name: CommandBlocks
-author: Ad5001,TheDragonRing,HimbeersaftLP
+author: Ad5001
 main: Ad5001\CMDBlock\main
 version: 1.0.0
 api: [1.0.0]
 commands:
     cmdblock:
-        description: Change the command of a commandblock.
+        description: Get help about cmd blocks
         usage: /cmdblock
         permission: cmdblock.cmd
 permissions:

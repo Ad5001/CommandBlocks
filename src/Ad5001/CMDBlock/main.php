@@ -23,12 +23,11 @@ class Main extends PluginBase implements Listener{
      
      
      public function onPlayerChat(PlayerChatEvent $event) { // When the player enters the command in the chat
-     $this->getLogger()->debug("{$event->getPlayer()->getName()} chated");
          if(isset($this->cmdeditor[$event->getPlayer()->getName()])) {
              $this->cfg->set($this->cmdeditor[$event->getPlayer()->getName()], $event->getMessage());
              $this->cfg->save();
              $pos = explode("/", $this->cmdeditor[$event->getPlayer()->getName()]);
-             $event->getPlayer()->sendMessage(self::PREFIX . "Command {$event->getMessage} as been set on {$this->cmdeditor[$event->getPlayer()->getName()]}");
+             $event->getPlayer()->sendMessage(self::PREFIX . "Command {$event->getMessage()} as been set on {$this->cmdeditor[$event->getPlayer()->getName()]}");
              $event->setCancelled();
          }
      }
@@ -40,7 +39,9 @@ class Main extends PluginBase implements Listener{
              $this->getLogger()->debug("{$event->getPlayer()->getName()} taped with an iron hoe and has perm cmdblock.create");
              if($event->getBlock()->getId() === 123 or $event->getBlock()->getId() === 124) {
                  $this->cmdeditor[$event->getPlayer()->getName()] = $event->getBlock()->x . "@" . $event->getBlock()->y . "@" . $event->getBlock()->z . "@" . $event->getBlock()->getLevel()->getName();
-                 $event->getPlayer()->sendMessage(self::PREFIX . "Selected block on {$event->getBlock()->x}, {$event->getBlock()->y}, {$event->getBlock()->z} on world {$event->getBlock()->getLevel()->getName()}. \nPlease enter wanted command in the chat");
+                 $event->getPlayer()->sendMessage(self::PREFIX . "Selected block on {$event->getBlock()->x}, {$event->getBlock()->y}, {$event->getBlock()->z} on world {$event->getBlock()->getLevel()->getName()}");
+                     $event->getPlayer()->sendMessage(self::PREFIX . "Current command : {$this->cfg->get($this->cmdeditor[$event->getPlayer()->getName()])}");
+                 $event->getPlayer()->sendMessage(self::PREFIX . "Please enter wanted command in the chat");
              }
          }
      }
@@ -52,7 +53,7 @@ class Main extends PluginBase implements Listener{
           $this->getLogger()->info("CommandBlocks enabled!");
           $this->cmdeditors = [];
           @mkdir($this->getDataFolder());
-          if(file_exists($this->getDataFolder() . "Blocks.json")) {
+          if(!file_exists($this->getDataFolder() . "Blocks.json")) {
               $this->saveResource("Blocks.json");
           }
           $this->cfg = new Config($this->getDataFolder() . "Blocks.json");
@@ -81,16 +82,16 @@ class ExeCmd extends PluginTask {
     
     
     public function onRun($tick) {
-        $this->m->reloadConfig();
+        $this->cfg->reload(); // to update constantly commands and blocks
         foreach($this->cfg->getAll() as $block => $cmd) {
             list($x, $y, $z, $levelname) = explode("@", $block);
             if($this->m->getServer()->getLevelByName($levelname)->getBlock(new Vector3($x,$y,$z))->getId() === 124) {
-                if(!$this->hasRun[$block]) { // Testing if the command already ran
+                if(!isset($this->hasRun[$block])) { // Testing if the command already ran
                     $this->m->getServer()->dispatchCommand(new ConsoleCommandSender(), $cmd);
                     $this->hasRun[$block] = true;
                 }
             } else { // If it's deactivate / an another block, we make it activable again.
-                $this->hasRun[$block] = false;
+                unset($this->hasRun[$block]);
             }
         }
         foreach($this->m->getServer()->getOnlinePlayers() as $player) { // To make them unable to break command blocks
