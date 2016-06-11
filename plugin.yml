@@ -1,13 +1,12 @@
-name: Commandblocks
+name: CommandBlocks
 author: Ad5001,TheDragonRing,HimbeersaftLP
-main: himbeer\cmdblx\main
+main: Ad5001\CMDBlock\main
 version: 1.0.0
 api: [1.0.0]
 commands:
     cmdblock:
         description: Change the command of a commandblock.
-        usage: /cmdblock new|edit|delete
+        usage: /cmdblock
 permissions:
     cmdblock.cmd:
         default: false
-        description: Permission for /cmdblock
