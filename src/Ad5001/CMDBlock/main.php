@@ -6,6 +6,8 @@ use pocketmine\command\Command;
 use pocketmine\command\CommandSender;
 use pocketmine\command\ConsoleCommandSender;
 use pocketmine\event\player\PlayerInteractEvent;
+use pocketmine\event\server\DataPacketReceiveEvent;
+use pocketmine\network\protocol\UseItemPacket;
 use pocketmine\event\player\PlayerChatEvent;
 use pocketmine\Player;
 use pocketmine\entity\Effect;
@@ -14,13 +16,14 @@ use pocketmine\math\Vector3;
 use pocketmine\utils\TextFormat as C;
 use pocketmine\permission\Permission;
 use pocketmine\utils\Config;
+
+use Ad5001\CMDBlock\CMDBlockSender;
 class Main extends PluginBase implements Listener{
      
      private $cmdeditor;
      
      
      const PREFIX = C::YELLOW . "[" . C::GREEN . "CMDBlock" . C::YELLOW . "] " . C::BLUE;
-     
      
      public function onPlayerChat(PlayerChatEvent $event) { // When the player enters the command in the chat
          if(isset($this->cmdeditor[$event->getPlayer()->getName()])) {
@@ -30,6 +33,14 @@ class Main extends PluginBase implements Listener{
              $event->getPlayer()->sendMessage(self::PREFIX . "Command {$event->getMessage()} as been set on {$this->cmdeditor[$event->getPlayer()->getName()]}");
              $event->setCancelled();
          }
+     }
+     
+     
+     public function onDisable() {
+         if(!file_exists($this->getDataFolder() . "logs.txt")) {
+             file_put_contents($this->getDataFolder() . "logs.txt", ""); 
+         }
+         file_put_contents($this->getDataFolder() . "logs.txt",implode(PHP_EOL, $this->logs));
      }
      
      
@@ -52,6 +63,8 @@ class Main extends PluginBase implements Listener{
           $this->getServer()->getPluginManager()->registerEvents($this,$this);
           $this->getLogger()->info("CommandBlocks enabled!");
           $this->cmdeditors = [];
+          $this->lastLog = [];
+          $this->logs = explode(PHP_EOL, file_get_contents($this->getDataFolder() . "logs.txt"));
           @mkdir($this->getDataFolder());
           if(!file_exists($this->getDataFolder() . "Blocks.json")) {
               $this->saveResource("Blocks.json");
@@ -68,6 +81,13 @@ class Main extends PluginBase implements Listener{
                break;
           }
           return true;
+     }
+     
+     
+     public static function logMsg(CMDBlockSender $cmdblock, string $message) { // Loging msg
+         $blockpos = $block->getPos();
+         $this->lastLog[$blockpos->x . $blockpos->y .  $blockpos->z . $block->getLevel()] = $message;
+         array_push($this->logs, $blockpos->x . "/" . $blockpos->y . "/" . $blockpos->z . "/" . $block->getLevel()->getName() . "> " . $message);
      }
 }
 class ExeCmd extends PluginTask {
@@ -87,8 +107,9 @@ class ExeCmd extends PluginTask {
             list($x, $y, $z, $levelname) = explode("@", $block);
             if($this->m->getServer()->getLevelByName($levelname)->getBlock(new Vector3($x,$y,$z))->getId() === 124) {
                 if(!isset($this->hasRun[$block])) { // Testing if the command already ran
-                    $this->m->getServer()->dispatchCommand(new ConsoleCommandSender(), $cmd);
+                    $this->m->getServer()->dispatchCommand(new CMDBlockSender(new Vector3($x,$y,$z), $this->m->getServer()->getLevelByName($levelname)), $cmd);
                     $this->hasRun[$block] = true;
+                    array_push($this->m->logs, $x . "/" . $y . "/" . $z . "/" . $levelname . "> " . $cmd);
                 }
             } else { // If it's deactivate / an another block, we make it activable again.
                 unset($this->hasRun[$block]);
