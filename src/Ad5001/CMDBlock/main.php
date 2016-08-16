@@ -32,10 +32,9 @@ class Main extends PluginBase implements Listener{
      
      public function onPlayerChat(PlayerChatEvent $event) { // When the player enters the command in the chat
          if(isset($this->cmdeditor[$event->getPlayer()->getName()])) {
-             $this->cfg->set($this->cmdeditor[$event->getPlayer()->getName()], $event->getMessage());
-             $this->cfg->save();
              $pos = explode("/", $this->cmdeditor[$event->getPlayer()->getName()]);
-             $event->getPlayer()->sendMessage(self::PREFIX . "Command {$event->getMessage()} as been set on {$this->cmdeditor[$event->getPlayer()->getName()]}");
+             $this->getServer()->getLevelByName($pos[3])->getBlock(new Vector3($pos[0], $pos[1], $pos[2]))->getNamedTag()->Command = (string) $event->getMessage();
+             $event->getPlayer()->sendMessage(self::PREFIX . "Command {$event->getMessage()} as been set on {$pos[0]}, {$pos[1]}, {$pos[2]}, {$pos[3]}");
              $event->setCancelled();
          }
      }
@@ -49,26 +48,29 @@ class Main extends PluginBase implements Listener{
      }
      
      
-     /*public function onTouch(PlayerInteractEvent $event) {
-         if($event->getPlayer()->getInventory()->getItemInHand()->getId() === 293 and $event->getPlayer()->hasPermission("cmdblock.create")) {
-             $this->getLogger()->debug("{$event->getPlayer()->getName()} taped with an iron hoe and has perm cmdblock.create");
-             if($event->getBlock()->getId() === 123 or $event->getBlock()->getId() === 124) {
-                 $this->cmdeditor[$event->getPlayer()->getName()] = $event->getBlock()->x . "@" . $event->getBlock()->y . "@" . $event->getBlock()->z . "@" . $event->getBlock()->getLevel()->getName();
-                 $event->getPlayer()->sendMessage(self::PREFIX . "Selected block on {$event->getBlock()->x}, {$event->getBlock()->y}, {$event->getBlock()->z} on world {$event->getBlock()->getLevel()->getName()}");
-                     $event->getPlayer()->sendMessage(self::PREFIX . "Current command : {$this->cfg->get($this->cmdeditor[$event->getPlayer()->getName()])}");
-                 $event->getPlayer()->sendMessage(self::PREFIX . "Please enter wanted command in the chat");
-             }
-         }
-     }*/
-     
-     
-     
-     public static function interact(Player $player, CommandBlock $b) {
+     public function onInteract(PlayerInteractEvent $e) {
+          $player = $e->getPlayer();
+          $b = $e->getBlock();
+          if($b->getId() == 123 or $b->getId() == 124 and $player->isOp() and $player->isCreative()) {
          $this->cmdeditor[$player->getName()] = $b->x . "@" . $b->y . "@" . $b->z . "@" . $b->level->getName();
          $player->sendMessage(self::PREFIX . "Selected block on {$b->x}, {$b->y}, {$b->z} on world {$b->level->getName()}");
-         $player->sendMessage(self::PREFIX . "Current command : {$b->namedtag->Command}");
-         $player->sendMessage(self::PREFIX . "Current output : {$b->namedtag->Command}");
-         $player->sendMessage(self::PREFIX . "Please enter wanted command in the chat");
+         $player->sendMessage(self::PREFIX . "Current command : {$b->getNamedTag()->Command}");
+         $player->sendMessage(self::PREFIX . "Current output : {$this->lastLog[$this->cmdeditor[$player->getName()]]}");
+         $player->sendMessage(self::PREFIX . "Please enter wanted command in the chat or type \"cancel\" to cancel");
+          }
+     }
+     
+     
+     public function onRedstoneUpdate(\pocketmine\event\block\RedstoneBlockUpdateEvent $event) {
+          if($event->getBlock()->getId() == 124) {
+               if(isset($event->getBlock()->getNamedTag()->Command)) {
+                    if($event->getBlock()->getNamedTag()->Command instanceof \pocketmine\nbt\tag\StringTag) {
+                         $this->getServer()->dispatchCommand(new CommandBlockSender(), $event->getBlock()->getNamedTag()->Command->getValue())
+                    }
+               } else {
+                    $event->getBlock()->getNamedTag()->Command = new \pocketmine\nbt\tag\StringTag("Command" => "");
+               }
+          }
      }
      
      
@@ -110,37 +112,3 @@ class Main extends PluginBase implements Listener{
          array_push($this->logs, $block->x . "@" . $block->y . "@" . $block->z . "@" . $block->level->getName() . "> " . $message);
      }
 }
-/*class ExeCmd extends PluginTask {
-    
-    
-    public function __construct(Main $plugin, Config $cfg) {
-        parent::__construct($plugin);
-        $this->m = $plugin;
-        $this->cfg = $cfg;
-        $this->hasRun = [];
-    }
-    
-    
-    public function onRun($tick) {
-        $this->cfg->reload(); // to update constantly commands and blocks
-        foreach($this->cfg->getAll() as $block => $cmd) {
-            list($x, $y, $z, $levelname) = explode("@", $block);
-            if($this->m->getServer()->getLevelByName($levelname)->getBlock(new Vector3($x,$y,$z))->getId() === 124) {
-                if(!isset($this->hasRun[$block])) { // Testing if the command already ran
-                    $this->m->getServer()->dispatchCommand(new CMDBlockSender(new Vector3($x,$y,$z), $this->m->getServer()->getLevelByName($levelname)), $cmd);
-                    $this->hasRun[$block] = true;
-                    array_push($this->m->logs, $x . "/" . $y . "/" . $z . "/" . $levelname . "> " . $cmd);
-                }
-            } else { // If it's deactivate / an another block, we make it activable again.
-                unset($this->hasRun[$block]);
-            }
-        }
-        foreach($this->m->getServer()->getOnlinePlayers() as $player) { // To make them unable to break command blocks
-            if(!$player->isCreative()) {
-                 if($player->getLevel()->getBlock($player->getTargetBlock(7))->getId() === 123 or $player->getLevel()->getBlock($player->getTargetBlock(7))->getId() === 124) {
-                     $player->addEffect(Effect::getEffectByName("FATIGUE"), 99, 5, true);
-                 }
-            }
-        }
-    }
-}*/
