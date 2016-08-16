@@ -107,7 +107,7 @@ class Main extends PluginBase implements Listener{
      }
      
      
-     public static function logMsg(CommandBlock $block, string $message) { // Loging msg
+     public static function logMsg(CommandBlockSender $block, string $message) { // Loging msg
          $this->lastLog[$block->x . "@" . $blockpos->y . "@" . $blockpos->z . "@" . $block->level->getName()] = $message;
          array_push($this->logs, $block->x . "@" . $block->y . "@" . $block->z . "@" . $block->level->getName() . "> " . $message);
      }
